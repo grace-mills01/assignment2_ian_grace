@@ -124,7 +124,7 @@ def _get_field_value(r: Row, field: FieldName) -> Optional[object]:
     return getattr(r, field)
 
 
-def filter_rows(
+def filter(
     rows: Optional[RLNode],
     field: FieldName,
     comp: CompType,
@@ -160,7 +160,7 @@ def answer_1(rows: Optional[RLNode]) -> int:
     Purpose: Return the number of countries in the dataset.
     """
     # pick a year that definitely exists in sample-file.csv
-    rows_2000 = filter_rows(rows, "year", "equal", 2000)
+    rows_2000 = filter(rows, "year", "equal", 2000)
     return listlen(rows_2000)
 
 
@@ -168,23 +168,23 @@ def answer_2(rows: Optional[RLNode]) -> Optional[RLNode]:
     """
     Purpose: Return all rows associated with Mexico.
     """
-    return filter_rows(rows, "country", "equal", "Mexico")
+    return filter(rows, "country", "equal", "Mexico")
 
 
 def answer_3(rows: Optional[RLNode]) -> Optional[RLNode]:
     """
     Purpose: Countries with higher per-capita total emissions than the US in 1990.
     """
-    us_1990 = filter_rows(rows, "country", "equal", "United States")
-    us_1990 = filter_rows(us_1990, "year", "equal", 1990)
+    us_1990 = filter(rows, "country", "equal", "United States")
+    us_1990 = filter(us_1990, "year", "equal", 1990)
 
     if us_1990 is None:
         return None
 
     us_value = us_1990.first.total_co2_emissions_excluding_lucf_per_capita
 
-    all_1990 = filter_rows(rows, "year", "equal", 1990)
-    return filter_rows(
+    all_1990 = filter(rows, "year", "equal", 1990)
+    return filter(
         all_1990,
         "total_co2_emissions_excluding_lucf_per_capita",
         "greater_than",
@@ -196,16 +196,16 @@ def answer_4(rows: Optional[RLNode]) -> Optional[RLNode]:
     """
     Purpose: Countries with higher per-capita total emissions than the US in 2020.
     """
-    us_2020 = filter_rows(rows, "country", "equal", "United States")
-    us_2020 = filter_rows(us_2020, "year", "equal", 2020)
+    us_2020 = filter(rows, "country", "equal", "United States")
+    us_2020 = filter(us_2020, "year", "equal", 2020)
 
     if us_2020 is None:
         return None
 
     us_value = us_2020.first.total_co2_emissions_excluding_lucf_per_capita
 
-    all_2020 = filter_rows(rows, "year", "equal", 2020)
-    return filter_rows(
+    all_2020 = filter(rows, "year", "equal", 2020)
+    return filter(
         all_2020,
         "total_co2_emissions_excluding_lucf_per_capita",
         "greater_than",
@@ -217,8 +217,8 @@ def answer_5(rows: Optional[RLNode]) -> Optional[float]:
     """
     Purpose: Return the approximate population of Luxembourg in 2014.
     """
-    lux = filter_rows(rows, "country", "equal", "Luxembourg")
-    lux_2014 = filter_rows(lux, "year", "equal", 2014)
+    lux = filter(rows, "country", "equal", "Luxembourg")
+    lux_2014 = filter(lux, "year", "equal", 2014)
 
     if lux_2014 is None:
         return None
@@ -235,10 +235,10 @@ def answer_6(rows: Optional[RLNode]) -> Optional[float]:
     Purpose: Return the multiplier increase in China’s electricity-and-heat emissions
     from 1990 to 2020.
     """
-    china = filter_rows(rows, "country", "equal", "China")
+    china = filter(rows, "country", "equal", "China")
 
-    c1990 = filter_rows(china, "year", "equal", 1990)
-    c2020 = filter_rows(china, "year", "equal", 2020)
+    c1990 = filter(china, "year", "equal", 1990)
+    c2020 = filter(china, "year", "equal", 2020)
 
     if c1990 is None or c2020 is None:
         return None
@@ -253,10 +253,10 @@ def answer_7(rows: Optional[RLNode]) -> Optional[float]:
     """
     Purpose: Project China’s electricity-and-heat emissions in 2070.
     """
-    china = filter_rows(rows, "country", "equal", "China")
+    china = filter(rows, "country", "equal", "China")
 
-    c1990 = filter_rows(china, "year", "equal", 1990)
-    c2020 = filter_rows(china, "year", "equal", 2020)
+    c1990 = filter(china, "year", "equal", 1990)
+    c2020 = filter(china, "year", "equal", 2020)
 
     if c1990 is None or c2020 is None:
         return None
@@ -272,7 +272,7 @@ class Tests(unittest.TestCase):
     def test_filter_country_equal(self):
         # All rows in sample-file.csv are Lithuania; filtering for Lithuania should return all rows.
         ll = read_csv_lines("sample_file.csv")
-        res = filter_rows(ll, "country", "equal", "Lithuania")
+        res = filter(ll, "country", "equal", "Lithuania")
         # Expect same length as original
 
     def test_listlen_empty(self):

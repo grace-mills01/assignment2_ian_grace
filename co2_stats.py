@@ -45,12 +45,12 @@ def array_to_row(arr: List[str]) -> Row:
         row = Row(
             arr[0],
             int(arr[1]),
-            str(arr[2]),
-            float(arr[3]),
-            float(arr[4]),
-            float(arr[5]),
-            float(arr[6]),
-            float(arr[7]),
+            arr[2],
+            arr[3],
+            arr[4],
+            arr[5],
+            arr[6],
+            arr[7],
         )
 
     if arr[0] == "country":

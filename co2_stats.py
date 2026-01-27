@@ -29,34 +29,23 @@ ll_file_rows: LinkedList
 
 
 # converts the csv file line from an array to a row
-def array_to_row(arr: List[str]) -> Row:
-    try:
-        row = Row(
-            arr[0],
-            int(arr[1]),
-            float(arr[2]),
-            float(arr[3]),
-            float(arr[4]),
-            float(arr[5]),
-            float(arr[6]),
-            float(arr[7]),
-        )
-    except TypeError:
-        row = Row(
-            arr[0],
-            int(arr[1]),
-            arr[2],
-            arr[3],
-            arr[4],
-            arr[5],
-            arr[6],
-            arr[7],
-        )
+def array_to_row(fields: List[str]) -> Row:
 
-    if arr[0] == "country":
-        return "header"
-    else:
-        return row
+    def parse_num(s: str) -> Optional[float]:
+        if s == "":
+            return None
+        return float(s)
+
+    return Row(
+        name=fields[0],
+        year=int(fields[1]),
+        electricity_and_heat_co2_emissions=parse_num(fields[2]),
+        electricity_and_heat_co2_emissions_per_capita=parse_num(fields[3]),
+        energy_co2_emissions=parse_num(fields[4]),
+        energy_co2_emissions_per_capita=parse_num(fields[5]),
+        total_co2_emissions_excluding_lucf=parse_num(fields[6]),
+        total_co2_emissions_excluding_lucf_per_capita=parse_num(fields[7]),
+    )
 
 
 # read in all the lines from a given csv file and gives a linked list of each row

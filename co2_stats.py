@@ -30,16 +30,29 @@ ll_file_rows: LinkedList
 
 # converts the csv file line from an array to a row
 def array_to_row(arr: List[str]) -> Row:
-    row = Row(
-        arr[0],
-        int(arr[1]),
-        float(arr[2]),
-        float(arr[3]),
-        float(arr[4]),
-        float(arr[5]),
-        float(arr[6]),
-        float(arr[7]),
-    )
+    try:
+        row = Row(
+            arr[0],
+            int(arr[1]),
+            float(arr[2]),
+            float(arr[3]),
+            float(arr[4]),
+            float(arr[5]),
+            float(arr[6]),
+            float(arr[7]),
+        )
+    except TypeError:
+        row = Row(
+            arr[0],
+            int(arr[1]),
+            str(arr[2]),
+            float(arr[3]),
+            float(arr[4]),
+            float(arr[5]),
+            float(arr[6]),
+            float(arr[7]),
+        )
+
     if arr[0] == "country":
         return "header"
     else:
@@ -70,29 +83,6 @@ def listlen(ll: LinkedList) -> int:
         case RLNode(_, r):
             return 1 + listlen(r)
 
-    def test_listlen_empty(self):
-        # Empty linked list
-        ll = None
-        self.assertEqual(listlen(ll), 0)
-
-    def test_listlen_sample_file(self):
-        # Linked list created from sample-file.csv
-        ll = read_csv_lines("sample-file.csv")
-
-        # sample-file.csv contains 10 data rows (excluding header)
-        self.assertEqual(listlen(ll), 10)
-
-    def test_listlen_after_traversal(self):
-        # Ensure listlen does not depend on traversal side effects
-        ll = read_csv_lines("sample-file.csv")
-
-        # Traverse part of the list
-        cur = ll
-        cur = cur.rest  # move to second node
-        cur = cur.rest  # move to third node
-
-        # Length of original list should still be unchanged
-
 
 FieldName = Literal[
     "country",
@@ -116,12 +106,6 @@ NUMERIC_FIELDS = {
     "total_co2_emissions_excluding_lucf",
     "total_co2_emissions_excluding_lucf_per_capita",
 }
-
-
-def _get_field_value(r: Row, field: FieldName) -> Optional[object]:
-    """Return the value for the named field from Row."""
-    # use attribute access; 'year' is int, country is str, others Optional[float]
-    return getattr(r, field)
 
 
 def filter(

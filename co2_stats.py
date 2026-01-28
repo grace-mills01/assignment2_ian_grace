@@ -95,7 +95,6 @@ LinkedList = Optional[RLNode]
 def filter(
     ll: LinkedList, field: FieldName, comp: CompType, value: Union[str, int, float]
 ) -> LinkedList:
-
     if field == "name":
         if comp != "equal" or not isinstance(value, str):
             raise ValueError("name supports only: comp='equal' with a string value")
@@ -109,12 +108,12 @@ def filter(
             )
 
     else:
-        if comp == "equal":
-            raise ValueError("numeric emissions fields do not support 'equal'")
+        # emissions numeric fields: allow less/equal/greater
+        if comp not in ("less_than", "equal", "greater_than"):
+            raise ValueError("bad comparison")
         if not isinstance(value, (int, float)):
             raise ValueError("numeric comparison value must be int or float")
 
-    # ---- helper for keep? ----
     def keep_row(r: Row) -> bool:
         v = getattr(r, field)
 
@@ -122,21 +121,26 @@ def filter(
             return v == value
 
         if field == "year":
-            # year is always present as int
             if comp == "less_than":
                 return v < value
             if comp == "equal":
                 return v == value
-            return v > value  # greater_than
+            return v > value
 
-        # numeric emissions fields (Optional[float])
+        # emissions numeric fields (Optional[float])
         if v is None:
             return False
-        if comp == "less_than":
-            return float(v) < float(value)
-        return float(v) > float(value)  # greater_than
+        vnum = float(v)
+        target = float(value)
 
-    # ---- preserve order: recurse on rest first, then add current if kept ----
+        if comp == "less_than":
+            return vnum < target
+        if comp == "greater_than":
+            return vnum > target
+
+        # equal for floats: use tolerance
+        return abs(vnum - target) < 1e-9
+
     match ll:
         case None:
             return None

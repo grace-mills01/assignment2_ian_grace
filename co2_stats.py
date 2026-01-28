@@ -73,6 +73,8 @@ def listlen(ll: LinkedList) -> int:
             return 1 + listlen(r)
 
 
+from typing import Optional, Literal, Union
+
 FieldName = Literal[
     "country",
     "year",
@@ -86,46 +88,74 @@ FieldName = Literal[
 
 CompType = Literal["less_than", "equal", "greater_than"]
 
-NUMERIC_FIELDS = {
-    "year",
-    "electricity_and_heat_co2_emissions",
-    "electricity_and_heat_co2_emissions_per_capita",
-    "energy_co2_emissions",
-    "energy_co2_emissions_per_capita",
-    "total_co2_emissions_excluding_lucf",
-    "total_co2_emissions_excluding_lucf_per_capita",
-}
+LinkedList = Optional[RLNode]
 
 
 def filter(
-    rows: Optional[RLNode],
-    field: FieldName,
-    comp: CompType,
-    value: object,
-) -> Optional[RLNode]:
+    ll: LinkedList, field: FieldName, comp: CompType, value: Union[str, int, float]
+) -> LinkedList:
     """
     Purpose:
-      Filter a linked list of Row objects by comparing a named field to a value.
+      Filter a linked list of Row records.
 
-    Params:
-      rows: Optional[RLNode] -- head of the linked list
-      field: FieldName -- one of the allowed column names
-      comp: CompType -- "less_than" | "equal" | "greater_than"
-      value: object -- comparison value (str for country, int/float for numeric fields)
+    Legal comparisons:
+      - field == "country": comp must be "equal" and value must be str
+      - field == "year": comp can be "less_than", "equal", "greater_than" and value must be int
+      - all other numeric fields: comp can be "less_than" or "greater_than" and value must be int/float
 
-    Returns:
-      Optional[RLNode] -- head of new linked list (preserves original order).
+    Missing numeric data (None) is excluded from results.
     """
-    # Validate combinations
-    if field == "country":
-        if comp != "equal":
-            raise ValueError("country field only supports 'equal' comparison")
-        if not isinstance(value, str):
-            raise ValueError("country comparison value must be a string")
+
+    # ---- validate inputs ----
+    if field == "name":
+        if comp != "equal" or not isinstance(value, str):
+            raise ValueError("country supports only: comp='equal' with a string value")
+
+    elif field == "year":
+        if comp not in ("less_than", "equal", "greater_than") or not isinstance(
+            value, int
+        ):
+            raise ValueError(
+                "year supports: less_than/equal/greater_than with an int value"
+            )
+
     else:
-        # numeric fields: only less_than / greater_than are allowed for measurements.
         if comp == "equal":
-            raise ValueError(f"field {field!r} does not support 'equal' comparison")
+            raise ValueError("numeric emissions fields do not support 'equal'")
+        if not isinstance(value, (int, float)):
+            raise ValueError("numeric comparison value must be int or float")
+
+    # ---- helper for keep? ----
+    def keep_row(r: Row) -> bool:
+        v = getattr(r, field)
+
+        if field == "country":
+            return v == value
+
+        if field == "year":
+            # year is always present as int
+            if comp == "less_than":
+                return v < value
+            if comp == "equal":
+                return v == value
+            return v > value  # greater_than
+
+        # numeric emissions fields (Optional[float])
+        if v is None:
+            return False
+        if comp == "less_than":
+            return float(v) < float(value)
+        return float(v) > float(value)  # greater_than
+
+    # ---- preserve order: recurse on rest first, then add current if kept ----
+    match ll:
+        case None:
+            return None
+        case RLNode(f, r):
+            filtered_rest = filter(r, field, comp, value)
+            if keep_row(f):
+                return RLNode(f, filtered_rest)
+            return filtered_rest
 
 
 def answer_1(rows: Optional[RLNode]) -> int:
@@ -242,11 +272,33 @@ def answer_7(rows: Optional[RLNode]) -> Optional[float]:
 
 
 class Tests(unittest.TestCase):
-    def test_filter_country_equal(self):
-        # All rows in sample-file.csv are Lithuania; filtering for Lithuania should return all rows.
+    def test_filter_year_equal(self):
         ll = read_csv_lines("sample_file.csv")
         res = filter(ll, "country", "equal", "Lithuania")
-        # Expect same length as original
+
+        # all rows are Lithuania in sample-file.csv
+        self.assertEqual(listlen(res), 10)
+        self.assertIsNotNone(res)
+        self.assertEqual(res.first.country, "Lithuania")
+
+    def test_filter_numeric_greater_than(self):
+        ll = read_csv_lines("sample_file.csv")
+        res = filter(
+            ll, "electricity_and_heat_co2_emissions_per_capita", "greater_than", 1.8
+        )
+
+        # From your sample data, > 1.8 occurs in years: 1994, 1996, 1998 (3 rows)
+        self.assertEqual(listlen(res), 3)
+
+        # Because filter preserves the original CSV order,
+        # the first match in the file among those is 1994, then 1996, then 1998.
+        self.assertIsNotNone(res)
+        self.assertEqual(res.first.year, 1994)
+        self.assertIsNotNone(res.rest)
+        self.assertEqual(res.rest.first.year, 1996)
+        self.assertIsNotNone(res.rest.rest)
+        self.assertEqual(res.rest.rest.first.year, 1998)
+        self.assertIsNone(res.rest.rest.rest)
 
     def test_listlen_empty(self):
         # Empty linked list

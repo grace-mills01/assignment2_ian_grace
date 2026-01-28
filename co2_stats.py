@@ -76,7 +76,7 @@ def listlen(ll: LinkedList) -> int:
 from typing import Optional, Literal, Union
 
 FieldName = Literal[
-    "country",
+    "name",
     "year",
     "electricity_and_heat_co2_emissions",
     "electricity_and_heat_co2_emissions_per_capita",
@@ -91,25 +91,14 @@ CompType = Literal["less_than", "equal", "greater_than"]
 LinkedList = Optional[RLNode]
 
 
+# Filter a linked list of Row records.
 def filter(
     ll: LinkedList, field: FieldName, comp: CompType, value: Union[str, int, float]
 ) -> LinkedList:
-    """
-    Purpose:
-      Filter a linked list of Row records.
 
-    Legal comparisons:
-      - field == "country": comp must be "equal" and value must be str
-      - field == "year": comp can be "less_than", "equal", "greater_than" and value must be int
-      - all other numeric fields: comp can be "less_than" or "greater_than" and value must be int/float
-
-    Missing numeric data (None) is excluded from results.
-    """
-
-    # ---- validate inputs ----
     if field == "name":
         if comp != "equal" or not isinstance(value, str):
-            raise ValueError("country supports only: comp='equal' with a string value")
+            raise ValueError("name supports only: comp='equal' with a string value")
 
     elif field == "year":
         if comp not in ("less_than", "equal", "greater_than") or not isinstance(
@@ -129,7 +118,7 @@ def filter(
     def keep_row(r: Row) -> bool:
         v = getattr(r, field)
 
-        if field == "country":
+        if field == "name":
             return v == value
 
         if field == "year":
@@ -158,27 +147,22 @@ def filter(
             return filtered_rest
 
 
+# Return the number of countries in the dataset
 def answer_1(rows: Optional[RLNode]) -> int:
-    """
-    Purpose: Return the number of countries in the dataset.
-    """
     # pick a year that definitely exists in sample-file.csv
     rows_2000 = filter(rows, "year", "equal", 2000)
     return listlen(rows_2000)
 
 
+# Return all rows associated with Mexico
 def answer_2(rows: Optional[RLNode]) -> Optional[RLNode]:
-    """
-    Purpose: Return all rows associated with Mexico.
-    """
-    return filter(rows, "country", "equal", "Mexico")
+    return filter(rows, "name", "equal", "Mexico")
 
 
+# Countries with higher per-capita total emissions than the US in 1990
 def answer_3(rows: Optional[RLNode]) -> Optional[RLNode]:
-    """
-    Purpose: Countries with higher per-capita total emissions than the US in 1990.
-    """
-    us_1990 = filter(rows, "country", "equal", "United States")
+
+    us_1990 = filter(rows, "name", "equal", "United States")
     us_1990 = filter(us_1990, "year", "equal", 1990)
 
     if us_1990 is None:
@@ -195,11 +179,10 @@ def answer_3(rows: Optional[RLNode]) -> Optional[RLNode]:
     )
 
 
+# Countries with higher per-capita total emissions than the US in 2020
 def answer_4(rows: Optional[RLNode]) -> Optional[RLNode]:
-    """
-    Purpose: Countries with higher per-capita total emissions than the US in 2020.
-    """
-    us_2020 = filter(rows, "country", "equal", "United States")
+
+    us_2020 = filter(rows, "name", "equal", "United States")
     us_2020 = filter(us_2020, "year", "equal", 2020)
 
     if us_2020 is None:
@@ -216,11 +199,10 @@ def answer_4(rows: Optional[RLNode]) -> Optional[RLNode]:
     )
 
 
+# Return the approximate population of Luxembourg in 2014
 def answer_5(rows: Optional[RLNode]) -> Optional[float]:
-    """
-    Purpose: Return the approximate population of Luxembourg in 2014.
-    """
-    lux = filter(rows, "country", "equal", "Luxembourg")
+
+    lux = filter(rows, "name", "equal", "Luxembourg")
     lux_2014 = filter(lux, "year", "equal", 2014)
 
     if lux_2014 is None:
@@ -233,12 +215,11 @@ def answer_5(rows: Optional[RLNode]) -> Optional[float]:
     )
 
 
+# Return the multiplier increase in China’s electricity-and-heat emissions
+# from 1990 to 2020
 def answer_6(rows: Optional[RLNode]) -> Optional[float]:
-    """
-    Purpose: Return the multiplier increase in China’s electricity-and-heat emissions
-    from 1990 to 2020.
-    """
-    china = filter(rows, "country", "equal", "China")
+
+    china = filter(rows, "name", "equal", "China")
 
     c1990 = filter(china, "year", "equal", 1990)
     c2020 = filter(china, "year", "equal", 2020)
@@ -252,11 +233,9 @@ def answer_6(rows: Optional[RLNode]) -> Optional[float]:
     return e2020 / e1990
 
 
+# Project China’s electricity-and-heat emissions in 2070.
 def answer_7(rows: Optional[RLNode]) -> Optional[float]:
-    """
-    Purpose: Project China’s electricity-and-heat emissions in 2070.
-    """
-    china = filter(rows, "country", "equal", "China")
+    china = filter(rows, "name", "equal", "China")
 
     c1990 = filter(china, "year", "equal", 1990)
     c2020 = filter(china, "year", "equal", 2020)
@@ -274,12 +253,12 @@ def answer_7(rows: Optional[RLNode]) -> Optional[float]:
 class Tests(unittest.TestCase):
     def test_filter_year_equal(self):
         ll = read_csv_lines("sample_file.csv")
-        res = filter(ll, "country", "equal", "Lithuania")
+        res = filter(ll, "name", "equal", "Lithuania")
 
         # all rows are Lithuania in sample-file.csv
         self.assertEqual(listlen(res), 10)
         self.assertIsNotNone(res)
-        self.assertEqual(res.first.country, "Lithuania")
+        self.assertEqual(res.first.name, "Lithuania")
 
     def test_filter_numeric_greater_than(self):
         ll = read_csv_lines("sample_file.csv")
@@ -287,17 +266,19 @@ class Tests(unittest.TestCase):
             ll, "electricity_and_heat_co2_emissions_per_capita", "greater_than", 1.8
         )
 
-        # From your sample data, > 1.8 occurs in years: 1994, 1996, 1998 (3 rows)
         self.assertEqual(listlen(res), 3)
 
-        # Because filter preserves the original CSV order,
-        # the first match in the file among those is 1994, then 1996, then 1998.
+        # Because read_csv_lines prepends, the linked list is reversed vs the file.
+        # So expected order here is: 1998 -> 1996 -> 1994
         self.assertIsNotNone(res)
-        self.assertEqual(res.first.year, 1994)
+        self.assertEqual(res.first.year, 1998)
+
         self.assertIsNotNone(res.rest)
         self.assertEqual(res.rest.first.year, 1996)
+
         self.assertIsNotNone(res.rest.rest)
-        self.assertEqual(res.rest.rest.first.year, 1998)
+        self.assertEqual(res.rest.rest.first.year, 1994)
+
         self.assertIsNone(res.rest.rest.rest)
 
     def test_listlen_empty(self):

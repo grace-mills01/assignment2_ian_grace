@@ -8,7 +8,7 @@ import sys
 
 @dataclass(frozen=True)
 class Row:
-    name: str
+    country: str
     year: int
     electricity_and_heat_co2_emissions: Optional[float]
     electricity_and_heat_co2_emissions_per_capita: Optional[float]
@@ -37,7 +37,7 @@ def array_to_row(fields: List[str]) -> Row:
         return float(s)
 
     return Row(
-        name=fields[0],
+        country=fields[0],
         year=int(fields[1]),
         electricity_and_heat_co2_emissions=parse_num(fields[2]),
         electricity_and_heat_co2_emissions_per_capita=parse_num(fields[3]),
@@ -66,17 +66,18 @@ def read_csv_lines(filename: str) -> Optional[RLNode]:
 
 # finds the length of a linked list of rows
 def listlen(ll: LinkedList) -> int:
-    match ll:
-        case None:
-            return 0
-        case RLNode(_, r):
-            return 1 + listlen(r)
+    n = 0
+    cur = ll
+    while cur is not None:
+        n += 1
+        cur = cur.rest
+    return n
 
 
 from typing import Optional, Literal, Union
 
 FieldName = Literal[
-    "name",
+    "country",
     "year",
     "electricity_and_heat_co2_emissions",
     "electricity_and_heat_co2_emissions_per_capita",
@@ -115,11 +116,11 @@ def _to_int(x) -> int:
 def filter(ll: LinkedList, field: FieldName, comp: CompType, value) -> LinkedList:
 
     # normalize value by field
-    if field == "name":
+    if field == "country":
         if comp != "equal":
-            raise ValueError("name supports only 'equal'")
+            raise ValueError("country supports only 'equal'")
         if not isinstance(value, str):
-            raise ValueError("name comparison value must be a string")
+            raise ValueError("country comparison value must be a string")
         norm_value = value
 
     elif field == "year":
@@ -137,7 +138,7 @@ def filter(ll: LinkedList, field: FieldName, comp: CompType, value) -> LinkedLis
     def keep_row(r: Row) -> bool:
         v = getattr(r, field)
 
-        if field == "name":
+        if field == "country":
             return v == norm_value
 
         if field == "year":
@@ -179,13 +180,13 @@ def answer_1(rows: Optional[RLNode]) -> int:
 
 # Return all rows associated with Mexico
 def answer_2(rows: Optional[RLNode]) -> Optional[RLNode]:
-    return filter(rows, "name", "equal", "Mexico")
+    return filter(rows, "country", "equal", "Mexico")
 
 
 # Countries with higher per-capita total emissions than the US in 1990
 def answer_3(rows: Optional[RLNode]) -> Optional[RLNode]:
 
-    us_1990 = filter(rows, "name", "equal", "United States")
+    us_1990 = filter(rows, "country", "equal", "United States")
     us_1990 = filter(us_1990, "year", "equal", 1990)
 
     if us_1990 is None:
@@ -205,7 +206,7 @@ def answer_3(rows: Optional[RLNode]) -> Optional[RLNode]:
 # Countries with higher per-capita total emissions than the US in 2020
 def answer_4(rows: Optional[RLNode]) -> Optional[RLNode]:
 
-    us_2020 = filter(rows, "name", "equal", "United States")
+    us_2020 = filter(rows, "country", "equal", "United States")
     us_2020 = filter(us_2020, "year", "equal", 2020)
 
     if us_2020 is None:
@@ -225,7 +226,7 @@ def answer_4(rows: Optional[RLNode]) -> Optional[RLNode]:
 # Return the approximate population of Luxembourg in 2014
 def answer_5(rows: Optional[RLNode]) -> Optional[float]:
 
-    lux = filter(rows, "name", "equal", "Luxembourg")
+    lux = filter(rows, "country", "equal", "Luxembourg")
     lux_2014 = filter(lux, "year", "equal", 2014)
 
     if lux_2014 is None:
@@ -242,7 +243,7 @@ def answer_5(rows: Optional[RLNode]) -> Optional[float]:
 # from 1990 to 2020
 def answer_6(rows: Optional[RLNode]) -> Optional[float]:
 
-    china = filter(rows, "name", "equal", "China")
+    china = filter(rows, "country", "equal", "China")
 
     c1990 = filter(china, "year", "equal", 1990)
     c2020 = filter(china, "year", "equal", 2020)
@@ -258,7 +259,7 @@ def answer_6(rows: Optional[RLNode]) -> Optional[float]:
 
 # Project China’s electricity-and-heat emissions in 2070.
 def answer_7(rows: Optional[RLNode]) -> Optional[float]:
-    china = filter(rows, "name", "equal", "China")
+    china = filter(rows, "country", "equal", "China")
 
     c1990 = filter(china, "year", "equal", 1990)
     c2020 = filter(china, "year", "equal", 2020)
@@ -276,12 +277,12 @@ def answer_7(rows: Optional[RLNode]) -> Optional[float]:
 class Tests(unittest.TestCase):
     def test_filter_year_equal(self):
         ll = read_csv_lines("sample_file.csv")
-        res = filter(ll, "name", "equal", "Lithuania")
+        res = filter(ll, "country", "equal", "Lithuania")
 
         # all rows are Lithuania in sample-file.csv
         self.assertEqual(listlen(res), 10)
         self.assertIsNotNone(res)
-        self.assertEqual(res.first.name, "Lithuania")
+        self.assertEqual(res.first.country, "Lithuania")
 
     def test_filter_numeric_greater_than(self):
         ll = read_csv_lines("sample_file.csv")
@@ -342,7 +343,7 @@ class Tests(unittest.TestCase):
         self.assertIsInstance(cur.first, Row)
 
         # Check expected values from the CSV
-        self.assertEqual(cur.first.name, "Lithuania")
+        self.assertEqual(cur.first.country, "Lithuania")
         self.assertEqual(cur.first.year, 1999)
         self.assertAlmostEqual(cur.first.electricity_and_heat_co2_emissions, 6.05)
 
@@ -357,7 +358,7 @@ class Tests(unittest.TestCase):
         self.assertIsInstance(ll.first, Row)
 
         # Sanity-check some Row fields
-        self.assertEqual(ll.first.name, "Lithuania")
+        self.assertEqual(ll.first.country, "Lithuania")
         self.assertEqual(ll.first.year, 2003)
 
     def test_read_csv_second_node_contains_row(self):
@@ -376,7 +377,7 @@ class Tests(unittest.TestCase):
         self.assertIsInstance(second_node.first, Row)
 
         # Check expected values from the CSV
-        self.assertEqual(second_node.first.name, "Lithuania")
+        self.assertEqual(second_node.first.country, "Lithuania")
         self.assertEqual(second_node.first.year, 2002)
 
 
